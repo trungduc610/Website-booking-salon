@@ -148,7 +148,7 @@ beauty-booking-php/
 
 ## 🛡️ Điểm Nổi Bật Về Kỹ Thuật (Bảo Vệ Đồ Án)
 
-1. **Không phụ thuộc thư viện bên ngoài nặng nề:** Viết thuần 100% bằng PHP 8+ hướng đối tượng, dễ dàng giải thích từng dòng code khi giảng viên vấn đáp.
+1. **Không phụ thuộc thư viện bên ngoài nặng nề:** Viết thuần 100% bằng PHP 8+ hướng đối tượng, dễ dàng giải thích từng dòng code.
 2. **Bảo mật cơ sở dữ liệu:** Toàn bộ truy vấn SQL đều dùng `PDO::prepare` kết hợp tham số ẩn danh `?` ngăn chặn triệt để SQL Injection.
 3. **Bảo mật Form & Session:** 
    - Mã hoá mật khẩu bằng thuật toán chuẩn công nghiệp `BCRYPT` (`password_hash`).
