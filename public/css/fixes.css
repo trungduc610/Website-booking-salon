@@ -1,0 +1,292 @@
+/* =============================================================
+   public/css/fixes.css  — BẢN VÁ GIAO DIỆN
+   Nạp SAU style.css:
+     <link rel="stylesheet" href="<?= url('css/style.css') ?>">
+     <link rel="stylesheet" href="<?= url('css/fixes.css') ?>">
+   ============================================================= */
+
+/* -------------------------------------------------------------
+   1. FONT — CHUỖI DỰ PHÒNG CHO TIẾNG VIỆT
+   Vấn đề bản cũ:  --font: 'Be Vietnam Pro', sans-serif;
+   • sans-serif trên Windows rơi về Arial — Arial KHÔNG có glyph riêng
+     cho ế, ộ, ữ, ỡ... nên trình duyệt phải ghép dấu bằng thuật toán
+     (synthetic composition) → dấu bị lệch, chồng lên chữ, cao thấp
+     không đều. Đây chính là hiện tượng "dấu tiếng Việt vỡ".
+   • Nếu Google Fonts bị chặn (mạng công ty, Trung Quốc) thì toàn bộ
+     trang rơi về Arial → hỏng dấu 100%.
+   Cách sửa: liệt kê font hệ thống CÓ hỗ trợ tiếng Việt đầy đủ trước
+   khi rơi về sans-serif.
+   ------------------------------------------------------------- */
+:root {
+  --font: 'Be Vietnam Pro', 'Inter', 'Segoe UI', Roboto,
+          'Helvetica Neue', 'Noto Sans', 'Liberation Sans',
+          -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+
+  --font-num: 'Be Vietnam Pro', 'SF Mono', ui-monospace, monospace;
+
+  /* Khoảng cách dòng tối thiểu để dấu mũ + dấu thanh không bị cắt */
+  --lh-tight: 1.35;
+  --lh-body: 1.65;
+}
+
+html {
+  /* Ngăn iOS tự phóng chữ khi xoay ngang */
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font);
+  line-height: var(--lh-body);
+  /* Làm nét dấu thanh trên màn hình Retina */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  /* Tránh chữ tiếng Việt dài (VD: "Chuyên viên chăm sóc da") tràn hộp */
+  overflow-wrap: break-word;
+}
+
+/* -------------------------------------------------------------
+   2. CẮT DẤU (diacritic clipping)
+   Tiếng Việt có ký tự 2 tầng dấu: Ế, Ồ, Ữ, Ặ. Chiều cao thực tế của
+   chúng cao hơn chữ Latin thường ~18%. Mọi chỗ đặt line-height < 1.3
+   hoặc chiều cao cố định + overflow:hidden đều cắt mất dấu trên.
+   ------------------------------------------------------------- */
+h1, h2, h3, h4, h5, h6,
+.hero h1, .page-header h1, .card-header,
+.stat-card .stat-value, .salon-card-name, .logo {
+  line-height: var(--lh-tight);
+  /* padding-top nhỏ tạo chỗ cho dấu khi phần tử cha có overflow:hidden */
+  padding-block-start: 0.04em;
+}
+
+.logo {
+  /* Bản cũ: chiều cao header cố định 64px + chữ 1.4rem → chữ "Ệ", "Ố"
+     trong tên salon tiếng Việt bị cạo mất phần dấu trên. */
+  line-height: 1.4;
+  display: inline-flex;
+  align-items: center;
+}
+
+.badge {
+  /* padding 3px 10px + font 0.78rem là quá chật cho "Đã xác nhận" */
+  padding: 5px 12px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.btn {
+  line-height: 1.4;
+  /* Nút có chữ dài ("Xác nhận đặt lịch") không được vỡ layout trên mobile */
+  white-space: normal;
+  text-align: center;
+  justify-content: center;
+}
+
+/* Tên salon 2 dòng, cắt gọn nhưng KHÔNG cắt mất dấu */
+.salon-card-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: calc(2 * 1em * var(--lh-tight));
+}
+
+/* Số tiền / giờ giấc dùng chữ số đều bề ngang → cột bảng không nhảy */
+.stat-value, .money, td.money, .price {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* -------------------------------------------------------------
+   3. Z-INDEX — THANG BẬC RÕ RÀNG
+   Bản cũ: .site-header z-index:100 (sticky), .dropdown z-index:200.
+   Vì .dropdown nằm TRONG .site-header nên nó bị kẹt trong stacking
+   context của header → mọi phần tử sau header có z-index ≥ 100 (modal,
+   datepicker) đều đè lên dropdown. Chuẩn hoá thành thang bậc:
+   ------------------------------------------------------------- */
+:root {
+  --z-base: 1;
+  --z-sticky: 100;
+  --z-dropdown: 1000;
+  --z-overlay: 1100;
+  --z-modal: 1200;
+  --z-toast: 1300;
+}
+
+.site-header { z-index: var(--z-sticky); }
+
+.dropdown {
+  z-index: var(--z-dropdown);
+  /* Hiện bằng opacity thay vì display:none → có transition, và giữ được
+     vùng hover liên tục (bản cũ display:none làm chuột "rơi" khỏi menu
+     khi di chuyển từ tên user xuống mục Đăng xuất). */
+  display: block;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: opacity .15s ease, transform .15s ease, visibility .15s;
+  pointer-events: none;
+}
+.nav-user:hover .dropdown,
+.nav-user:focus-within .dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+/* Cầu nối vô hình 8px để chuột không rơi ra ngoài khi đi xuống menu */
+.nav-user .dropdown::before {
+  content: '';
+  position: absolute;
+  top: -8px; left: 0; right: 0; height: 8px;
+}
+
+.modal-backdrop { z-index: var(--z-overlay); }
+.modal          { z-index: var(--z-modal); }
+.alert.is-toast { z-index: var(--z-toast); }
+
+/* -------------------------------------------------------------
+   4. RESPONSIVE — LỖI TRÀN NGANG
+   ------------------------------------------------------------- */
+html, body { max-width: 100%; overflow-x: hidden; }
+
+.container { width: 100%; }
+
+/* Bảng trên mobile: bản cũ .table-wrap có overflow-x nhưng nhiều trang
+   quên bọc <table> → cả trang bị kéo ngang. Ép mọi bảng tự cuộn. */
+table { min-width: 560px; }
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius);
+}
+.table-wrap::after {
+  /* Gợi ý người dùng rằng bảng còn cuộn được */
+  content: '';
+  position: sticky; right: 0; top: 0;
+  display: block; width: 24px; height: 100%;
+  background: linear-gradient(to left, rgba(0,0,0,.06), transparent);
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .header-inner { height: auto; min-height: 64px; flex-wrap: wrap; gap: 8px; padding: 10px 0; }
+  .main-nav { flex-wrap: wrap; row-gap: 6px; }
+}
+
+@media (max-width: 768px) {
+  /* Lưới nhân viên ở form đặt lịch: .grid-3 → 2 cột vẫn quá chật cho
+     "Chuyên viên Nối mi" */
+  .grid-3 { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+
+  /* Khối tổng tiền + nút đặt lịch: bản cũ là flex space-between, trên
+     màn 360px nút bị bóp còn 2 dòng chữ chồng lên giá tiền. */
+  .booking-summary { flex-direction: column; align-items: stretch !important; gap: 14px; }
+  .booking-summary .btn { width: 100%; }
+
+  .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+
+  /* Sidebar salon: trượt ra thay vì đẩy nội dung */
+  .sidebar { display: none; }
+  .sidebar.open { display: block; }
+  .sidebar-toggle { display: inline-flex; }
+}
+
+@media (min-width: 769px) { .sidebar-toggle { display: none; } }
+
+@media (max-width: 480px) {
+  html { font-size: 15px; }
+  .hero { padding: 36px 20px; border-radius: 12px; }
+  .hero h1 { font-size: 1.55rem; }
+  .card { padding: 16px; }
+  .container { padding: 0 14px; }
+  /* Input ≥16px để iOS Safari không tự zoom khi focus */
+  .form-control, input, select, textarea { font-size: 16px; }
+}
+
+/* -------------------------------------------------------------
+   5. FORM ĐẶT LỊCH — CÁC LỖI HIỂN THỊ
+   ------------------------------------------------------------- */
+
+/* Bản cũ: <input type="radio" style="display:none"> mà không có CSS cho
+   trạng thái :checked → khách chọn nhân viên xong KHÔNG thấy phản hồi gì.
+   Đây là lỗi UX nặng nhất của luồng đặt lịch. */
+.staff-option, .service-option {
+  display: block;
+  position: relative;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+}
+.staff-option:has(input:checked),
+.service-option:has(input:checked) {
+  border-color: var(--primary);
+  background: #fff5fa;
+  box-shadow: 0 0 0 3px rgba(233, 30, 140, .12);
+}
+.staff-option:has(input:checked)::after {
+  content: '✓';
+  position: absolute; top: 6px; right: 8px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--primary); color: #fff;
+  font-size: 12px; line-height: 20px; text-align: center;
+}
+/* Dự phòng cho trình duyệt cũ chưa hỗ trợ :has() — JS thêm class .is-selected */
+.staff-option.is-selected, .service-option.is-selected {
+  border-color: var(--primary);
+  background: #fff5fa;
+}
+
+/* Bàn phím: bản cũ display:none khiến radio biến mất khỏi luồng tab,
+   người dùng bàn phím không chọn được nhân viên. */
+.staff-option input, .service-option input {
+  position: absolute;
+  opacity: 0;
+  width: 1px; height: 1px;
+}
+.staff-option:focus-within, .service-option:focus-within {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Lưới khung giờ */
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+.slot {
+  padding: 10px 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--white);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  cursor: pointer;
+}
+.slot[aria-pressed="true"] { background: var(--primary); color: #fff; border-color: var(--primary); }
+.slot:disabled, .slot.is-full {
+  background: #f1f3f5; color: #adb5bd;
+  cursor: not-allowed; text-decoration: line-through;
+}
+
+/* -------------------------------------------------------------
+   6. KHẢ NĂNG TIẾP CẬN
+   ------------------------------------------------------------- */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Ảnh hỏng (bản cũ gọi uploadUrl() cả khi logo = NULL → icon vỡ) */
+img[src$="/uploads/"], img[src=""] { display: none; }

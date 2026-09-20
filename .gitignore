@@ -1,0 +1,9 @@
+﻿# Sensitive & temp files
+cookie.txt
+*.log
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
