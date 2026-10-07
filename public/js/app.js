@@ -1,52 +1,41 @@
-// public/js/app.js
-// JavaScript tối giản cho GlowBook
-
-'use strict';
-
-// ---- Xác nhận trước khi xóa / hủy -------------------------
-document.querySelectorAll('[data-confirm]').forEach(el => {
-  el.addEventListener('click', e => {
-    if (!confirm(el.dataset.confirm || 'Bạn có chắc chắn không?')) {
-      e.preventDefault();
-    }
-  });
+document.querySelectorAll('[data-submit-form]').forEach((form) => {
+    const button = form.querySelector('[data-submit-button]');
+    const spinner = button.querySelector('.button-spinner');
+    const status = form.querySelector('[data-submit-status]');
+    const initiallyDisabled = button.disabled;
+    const reset = () => {
+        button.disabled = initiallyDisabled;
+        form.removeAttribute('aria-busy');
+        spinner.hidden = true;
+        status.textContent = '';
+    };
+    form.addEventListener('submit', () => {
+        button.disabled = true;
+        spinner.hidden = false;
+        form.setAttribute('aria-busy', 'true');
+        status.textContent = 'Đang xử lý, vui lòng chờ…';
+    });
+    window.addEventListener('pageshow', reset);
 });
 
-// ---- Auto-hide flash message sau 5 giây ------------------
-document.querySelectorAll('.alert').forEach(alert => {
-  setTimeout(() => {
-    alert.style.transition = 'opacity 0.5s';
-    alert.style.opacity = '0';
-    setTimeout(() => alert.remove(), 500);
-  }, 5000);
-});
-
-// ---- Preview ảnh trước khi upload -------------------------
-document.querySelectorAll('input[type="file"][data-preview]').forEach(input => {
-  input.addEventListener('change', function () {
-    const previewId = this.dataset.preview;
-    const preview   = document.getElementById(previewId);
-    if (preview && this.files[0]) {
-      const reader = new FileReader();
-      reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
-      reader.readAsDataURL(this.files[0]);
-    }
-  });
-});
-
-// ---- Toggle sidebar trên mobile ---------------------------
-const sidebarToggle = document.getElementById('sidebar-toggle');
-const sidebar       = document.querySelector('.sidebar');
-if (sidebarToggle && sidebar) {
-  sidebarToggle.addEventListener('click', () => {
-    sidebar.classList.toggle('open');
-  });
-}
-
-// ---- Active sidebar link -----------------------------------
-const currentPath = window.location.pathname;
-document.querySelectorAll('.sidebar a').forEach(link => {
-  if (link.getAttribute('href') === currentPath) {
-    link.classList.add('active');
-  }
+document.querySelectorAll('[data-availability-url]').forEach((form) => {
+    const button = form.querySelector('[data-check-availability]');
+    const status = form.querySelector('[data-availability-status]');
+    button.addEventListener('click', async () => {
+        const input = new FormData(form);
+        const query = new URLSearchParams();
+        ['date', 'time', 'staff_id'].forEach((key) => { if (input.get(key)) query.set(key, input.get(key)); });
+        input.getAll('service_ids[]').forEach((id) => query.append('service_ids[]', id));
+        button.disabled = true;
+        status.textContent = 'Đang kiểm tra…';
+        try {
+            const response = await fetch(form.dataset.availabilityUrl + '?' + query.toString(), {headers: {'Accept': 'application/json'}});
+            const body = await response.json();
+            status.textContent = response.ok ? body.message : (Object.values(body.errors || {}).flat().join(' ') || 'Không thể kiểm tra lúc này.');
+        } catch {
+            status.textContent = 'Không thể kết nối. Vui lòng thử lại.';
+        } finally {
+            button.disabled = false;
+        }
+    });
 });
