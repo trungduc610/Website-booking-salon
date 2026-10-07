@@ -1,12 +1,17 @@
 <?php
-// ============================================================
-//  config/database.php
-//  Cấu hình kết nối MySQL — chỉnh sửa trước khi chạy
-// ============================================================
 
-define('DB_HOST',     'localhost');
-define('DB_PORT',     '3306');
-define('DB_NAME',     'glowbook_db');
-define('DB_USER',     'root');
-define('DB_PASS',     'Deobietpass@123');
-define('DB_CHARSET',  'utf8mb4');
+return [
+    'default' => env('DB_CONNECTION', 'mysql'),
+    'connections' => [
+        'mysql' => [
+            'driver' => 'mysql', 'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'), 'database' => env('DB_DATABASE', 'glowbook_laravel_dev'),
+            'username' => env('DB_USERNAME', 'root'), 'password' => env('DB_PASSWORD', ''),
+            'unix_socket' => env('DB_SOCKET', ''), 'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci', 'prefix' => '', 'prefix_indexes' => true,
+            'strict' => true, 'engine' => 'InnoDB',
+        ],
+        'sqlite' => ['driver' => 'sqlite', 'database' => env('DB_DATABASE', ':memory:'), 'prefix' => '', 'foreign_key_constraints' => true],
+    ],
+    'migrations' => ['table' => 'migrations', 'update_date_on_publish' => true],
+];

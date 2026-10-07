@@ -1,9 +1,37 @@
-﻿# Sensitive & temp files
-cookie.txt
-*.log
+/vendor/
+/.env
+/.phpunit.cache/
+/storage/**/*.log
+/bootstrap/cache/*.php
+/public/storage
 
-# IDE & OS
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
+/.php-test.ini
+
+# Local credentials and environment variants
+/.env.*
+!/.env.example
+/auth.json
+*.pem
+*.key
+
+# Runtime data, uploads and local verification output
+/storage/**
+!/storage/**/
+!/storage/**/.gitignore
+/.phpunit.result.cache
+/*verification-results.txt
+/database/*.sqlite
+/database/*.sqlite3
+/database/*.sqlite-*
+/database/*.db
+/backups/
+/*.sql
+/*.zip
+
+# Machine-specific launcher configuration
+/glowbook.local.json
+/.php-local.ini
+/.idea/
+/.vscode/
+/node_modules/
+/public/uploads/
