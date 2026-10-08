@@ -10,7 +10,7 @@ use Illuminate\Validation\ValidationException;
 
 class Availability
 {
-    public function plan(Branch $branch, array $data): array
+    public function plan(Branch $branch, array $data, ?int $excludeBookingId = null): array
     {
         $branch->loadMissing('business');
         if (! $branch->business || $branch->business->status !== 'ACTIVE' || $branch->operational_status !== 'ACTIVE') {
@@ -62,6 +62,7 @@ class Availability
         // Load reservations once for all candidates, including adjacent days for buffers crossing midnight.
         $busy = DB::table('booking_services as items')->join('bookings as b', 'b.id', '=', 'items.booking_id')
             ->where('b.branch_id', $branch->id)->whereNull('b.deleted_at')->whereIn('b.status', Booking::ACTIVE)
+            ->when($excludeBookingId, fn ($q) => $q->where('b.id', '<>', $excludeBookingId))
             ->where(fn ($q) => $q->where('b.status', '<>', 'PENDING')->orWhereNull('b.pending_expires_at')->orWhere('b.pending_expires_at', '>', now()))
             ->whereNotIn('items.status', ['CANCELLED', 'SKIPPED'])->whereIn('items.staff_id', $staff->modelKeys())
             ->whereBetween('b.appointment_date', [$start->subDay()->toDateString(), $end->addDay()->toDateString()])

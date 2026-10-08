@@ -3,7 +3,8 @@
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/dashboard');
+Route::redirect('/', '/salons');
+Route::post('/payments/momo/ipn', [\App\Http\Controllers\MomoController::class, 'ipn'])->name('momo.ipn');
 Route::get('/salons', [\App\Http\Controllers\BookingController::class, 'salons'])->name('salons.index');
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthController::class, 'login'])->name('login');
@@ -24,6 +25,11 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     Route::get('/salon/branches/{branch}/vouchers', [\App\Http\Controllers\VoucherController::class, 'index'])->name('vouchers.index');
     Route::post('/salon/branches/{branch}/vouchers', [\App\Http\Controllers\VoucherController::class, 'store'])->name('vouchers.store');
     Route::patch('/salon/branches/{branch}/vouchers/{voucher}', [\App\Http\Controllers\VoucherController::class, 'toggle'])->name('vouchers.toggle');
+    Route::post('/customer/bookings/{booking}/momo', [\App\Http\Controllers\MomoController::class, 'checkout'])->middleware('throttle:5,1')->name('momo.checkout');
+    Route::post('/bookings/{booking}/payments/{payment}/momo/reconcile', [\App\Http\Controllers\MomoController::class, 'reconcile'])->middleware('throttle:10,1')->name('momo.reconcile');
+    Route::patch('/customer/bookings/{booking}/reschedule', [\App\Http\Controllers\RescheduleController::class, 'customer'])->middleware('throttle:20,1')->name('bookings.reschedule');
+    Route::patch('/salon/branches/{branch}/bookings/{booking}/reschedule', [\App\Http\Controllers\RescheduleController::class, 'salon'])->middleware('throttle:20,1')->name('salon.bookings.reschedule');
+    Route::get('/salons/{branch}/slots', \App\Http\Controllers\SlotController::class)->middleware('throttle:20,1')->name('bookings.slots');
     Route::controller(\App\Http\Controllers\BookingController::class)->group(function (): void {
         Route::get('/salons/{branch}/book', 'create')->name('bookings.create');
         Route::get('/salons/{branch}/availability', 'availability')->middleware('throttle:60,1')->name('bookings.availability');
@@ -60,8 +66,8 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::get('/{service}/edit', 'edit')->name('edit');
         Route::put('/{service}', 'update')->name('update');
     });
-    Route::view('/dashboard', 'dashboard')->name('dashboard');
-    Route::view('/admin/dashboard', 'admin.dashboard')->middleware('can:view-platform')->name('admin.dashboard');
+    Route::get('/dashboard', \App\Http\Controllers\CustomerDashboardController::class)->name('dashboard');
+    Route::get('/admin/dashboard', \App\Http\Controllers\PlatformDashboardController::class)->middleware('can:view-platform')->name('admin.dashboard');
 });
 // Public salon routes will use /salons/{business:slug}; management stays under /salon.
 // No legacy endpoint is advertised until its module has been migrated and tested.

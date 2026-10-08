@@ -63,6 +63,7 @@ class PaymentController extends Controller
         $booking->load('branch');
         return view('payments.show', ['booking' => $booking, 'salon' => $salon,
             'payments' => Payment::with('refunds')->where('booking_id', $booking->id)->orderByDesc('id')->get(),
+            'momoEnabled' => app(\App\Services\MomoGateway::class)->enabledFor($booking->branch),
             'totals' => $manager->totals($booking)]);
     }
 }

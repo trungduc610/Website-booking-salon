@@ -109,8 +109,8 @@ class PaymentManager
                 $this->invalid('Yêu cầu hoàn tiền đã đổi trạng thái. Hãy tải lại trang.');
             }
             if ($data['status'] === 'REFUNDED') {
-                if ($payment->method === 'BANK_TRANSFER' && empty($data['transaction_ref'])) {
-                    $this->invalid('Cần mã giao dịch chuyển khoản hoàn tiền.');
+                if (in_array($payment->method, ['BANK_TRANSFER', 'MOMO'], true) && empty($data['transaction_ref'])) {
+                    $this->invalid('Cần mã giao dịch hoàn tiền qua ngân hàng hoặc MoMo.');
                 }
                 $total = $payment->refunds()->where('status', 'REFUNDED')->get()->sum(fn ($r) => VoucherDiscount::cents($r->amount))
                     + VoucherDiscount::cents($refund->amount);

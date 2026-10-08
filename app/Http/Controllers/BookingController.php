@@ -12,10 +12,12 @@ use Illuminate\Support\Facades\Gate;
 
 class BookingController extends Controller
 {
-    public function salons()
+    public function salons(Request $request)
     {
+        $request->validate(['q' => ['nullable', 'string', 'max:120']]);
         $branches = Branch::with('business')->where('operational_status', 'ACTIVE')
-            ->whereHas('business', fn ($q) => $q->where('status', 'ACTIVE'))->orderBy('name')->paginate(12);
+            ->when($request->filled('q'), fn ($q) => $q->where(fn ($q) => $q->where('name', 'like', '%'.$request->input('q').'%')->orWhere('address_line', 'like', '%'.$request->input('q').'%')->orWhereHas('business', fn ($b) => $b->where('name', 'like', '%'.$request->input('q').'%'))))
+            ->whereHas('business', fn ($q) => $q->where('status', 'ACTIVE'))->orderBy('name')->paginate(12)->withQueryString();
         return view('bookings.salons', compact('branches'));
     }
 
@@ -24,7 +26,8 @@ class BookingController extends Controller
         $branch->load('business');
         abort_unless($branch->operational_status === 'ACTIVE' && $branch->business?->status === 'ACTIVE', 404);
         return view('bookings.form', ['branch' => $branch,
-            'services' => $branch->services()->where('status', 'ACTIVE')->where('bookable', true)->orderBy('name')->get(),
+            'bufferMinutes' => (int) \Illuminate\Support\Facades\DB::table('branch_booking_policies')->where('branch_id', $branch->id)->value('default_buffer_minutes'),
+            'services' => $branch->services()->with('category')->where('status', 'ACTIVE')->where('bookable', true)->orderBy('name')->get(),
             'staffList' => $branch->staff()->where('status', 'ACTIVE')->where('is_bookable', true)->where('public_visible', true)->orderBy('full_name')->get()]);
     }
 
@@ -62,13 +65,38 @@ class BookingController extends Controller
         return back()->with('success', 'Đã hủy lịch hẹn.');
     }
 
-    public function salon(Branch $branch)
+    public function salon(Request $request, Branch $branch)
     {
         Gate::authorize('manageBookings', $branch);
-        return view('bookings.index', ['branch' => $branch,
-            'bookings' => Booking::with('items')->where('branch_id', $branch->id)->orderByDesc('appointment_date')->paginate(15)]);
+        $request->validate(['date' => ['nullable', 'date_format:Y-m-d'], 'status' => ['nullable', 'in:PENDING,CONFIRMED,CHECKED_IN,IN_PROGRESS,COMPLETED,CANCELLED,NO_SHOW,REJECTED,EXPIRED']]);
+        $today = now($branch->timezone)->toDateString();
+        $base = Booking::where('branch_id', $branch->id);
+        $metrics = [
+            'date' => $today,
+            'today' => (clone $base)->where('appointment_date', $today)->count(),
+            'pending' => (clone $base)->where('status', 'PENDING')->where(fn ($q) => $q->whereNull('pending_expires_at')->orWhere('pending_expires_at', '>', now()))->count(),
+            'completed' => (clone $base)->where('appointment_date', $today)->where('status', 'COMPLETED')->count(),
+        ];
+        $dayStart = now($branch->timezone)->startOfDay()->setTimezone(config('app.timezone'));
+        $metrics['received'] = \Illuminate\Support\Facades\DB::table('payments as p')->join('bookings as b', 'b.id', '=', 'p.booking_id')
+            ->where('b.branch_id', $branch->id)->whereIn('p.status', ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'])
+            ->where('p.paid_at', '>=', $dayStart)->where('p.paid_at', '<', $dayStart->copy()->addDay())->sum('p.amount');
+        $noShows = (clone $base)->where('appointment_date', $today)->where('status', 'NO_SHOW')->count();
+        $finished = $noShows + $metrics['completed'];
+        $metrics['noShowRate'] = $finished ? round($noShows / $finished * 100, 1) : null;
+        $daily = (clone $base)->whereBetween('appointment_date', [now($branch->timezone)->subDays(6)->toDateString(), $today])
+            ->selectRaw('appointment_date, count(*) as total')->groupBy('appointment_date')->pluck('total', 'appointment_date');
+        $metrics['trend'] = collect(range(6, 0))->map(fn ($days) => (int) ($daily[now($branch->timezone)->subDays($days)->toDateString()] ?? 0))->all();
+        $scheduleDate = $request->input('date') ?: $today;
+        $schedule = (clone $base)->with('items')->where('appointment_date', $scheduleDate)->whereIn('status', Booking::ACTIVE)->where(fn ($q) => $q->where('status', '<>', 'PENDING')->orWhereNull('pending_expires_at')->orWhere('pending_expires_at', '>', now()))->orderBy('appointment_start_time')->get();
+        $scheduleStaff = $branch->staff()->orderBy('full_name')->get();
+        $bufferMinutes = (int) \Illuminate\Support\Facades\DB::table('branch_booking_policies')->where('branch_id', $branch->id)->value('default_buffer_minutes');
+        return view('bookings.index', ['branch' => $branch, 'metrics' => $metrics, 'schedule' => $schedule, 'scheduleDate' => $scheduleDate, 'scheduleStaff' => $scheduleStaff, 'bufferMinutes' => $bufferMinutes,
+            'bookings' => $base->with('items')
+                ->when($request->filled('date'), fn ($q) => $q->where('appointment_date', $request->input('date')))
+                ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))
+                ->orderByDesc('appointment_date')->orderBy('appointment_start_time')->paginate(15)->withQueryString()]);
     }
-
     public function transition(Request $request, Branch $branch, Booking $booking, BookingManager $manager)
     {
         Gate::authorize('manageBookings', $branch);
