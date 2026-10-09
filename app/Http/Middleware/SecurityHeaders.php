@@ -14,7 +14,7 @@ class SecurityHeaders
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        $response->headers->set('Content-Security-Policy', "default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; form-action 'self'; base-uri 'self'; frame-ancestors 'self'");
+        $response->headers->set('Content-Security-Policy', "default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; form-action 'self' https://payment.momo.vn https://test-payment.momo.vn; base-uri 'self'; frame-ancestors 'self'");
         if ($request->user()) {
             $response->headers->set('Cache-Control', 'no-store, private');
         }

@@ -11,6 +11,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias(['active' => EnsureAccountIsActive::class]);
         $middleware->append(SecurityHeaders::class);
+        $middleware->validateCsrfTokens(except: ['payments/momo/ipn']);
         $middleware->redirectGuestsTo('/login');
         $middleware->redirectUsersTo('/dashboard');
     })
