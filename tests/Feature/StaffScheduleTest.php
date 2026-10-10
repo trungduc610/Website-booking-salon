@@ -79,10 +79,10 @@ class StaffScheduleTest extends TestCase
         $this->assertSame('CANCELLED', $leave->fresh()->status);
     }
 
-    public function test_schedule_mutation_is_blocked_with_future_booking(): void
+    public function test_unchanged_schedule_is_allowed_with_future_booking(): void
     {
         $f = $this->bookingFixture();
         app(\App\Services\BookingManager::class)->create($f['user'], $f['branch'], $this->bookingData($f));
-        $this->actingAs($f['user'])->put(route('staff.hours', [$f['branch'],$f['staff']]), $this->hoursPayload())->assertSessionHasErrors('schedule');
+        $this->actingAs($f['user'])->put(route('staff.hours', [$f['branch'],$f['staff']]), $this->hoursPayload())->assertSessionHasNoErrors();
     }
 }

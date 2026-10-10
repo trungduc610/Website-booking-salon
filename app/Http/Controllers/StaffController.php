@@ -4,16 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\HoursRequest;
 use App\Http\Requests\StaffRequest;
-use App\Models\Booking;
 use App\Models\Branch;
 use App\Models\StaffProfile;
+use App\Services\BookingScheduleGuard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\ValidationException;
 
 class StaffController extends Controller
 {
+    public function __construct(private BookingScheduleGuard $scheduleGuard)
+    {
+    }
+
     public function index(Branch $branch)
     {
         Gate::authorize('view', $branch);
@@ -46,7 +49,8 @@ class StaffController extends Controller
     {
         DB::transaction(function () use ($request, $branch, $staff): void {
             Branch::whereKey($branch->id)->lockForUpdate()->firstOrFail();
-            $this->assertNoFutureBookings($branch, $staff);
+            $staff = $branch->staff()->findOrFail($staff->id);
+            $this->scheduleGuard->staffProfile($branch, $staff, $request->validated());
             $staff->update($request->safe()->except('service_ids'));
             $staff->services()->sync($request->validated('service_ids'));
         });
@@ -57,7 +61,7 @@ class StaffController extends Controller
     {
         DB::transaction(function () use ($request, $branch, $staff): void {
             Branch::whereKey($branch->id)->lockForUpdate()->firstOrFail();
-            $this->assertNoFutureBookings($branch, $staff);
+            $this->scheduleGuard->staffHours($branch, $staff, $request->validated('hours'));
             foreach ($request->validated('hours') as $row) {
                 $staff->hours()->updateOrCreate(['day_of_week' => $row['day_of_week']], $row);
             }
@@ -77,7 +81,7 @@ class StaffController extends Controller
         $data['end_at'] = \Carbon\CarbonImmutable::parse($data['end_at'], $branch->timezone)->format('Y-m-d H:i:s');
         DB::transaction(function () use ($data, $request, $branch, $staff): void {
             Branch::whereKey($branch->id)->lockForUpdate()->firstOrFail();
-            $this->assertNoFutureBookings($branch, $staff);
+            $this->scheduleGuard->leave($branch, $staff, $data);
             $staff->leaves()->create([...$data, 'status' => 'APPROVED', 'reviewed_by' => $request->user()->id]);
         });
         return back()->with('success', 'Đã ghi nhận nghỉ phép.');
@@ -98,16 +102,5 @@ class StaffController extends Controller
         $staff->load(['services', 'hours']);
         $leaves = $staff->exists ? $staff->leaves()->orderByDesc('start_at')->paginate(10) : collect();
         return view('staff.form', ['branch' => $branch, 'staff' => $staff, 'services' => $branch->services()->orderBy('name')->get(), 'leaves' => $leaves]);
-    }
-
-    private function assertNoFutureBookings(Branch $branch, StaffProfile $staff): void
-    {
-        $hasBookings = DB::table('booking_services')->join('bookings', 'bookings.id', '=', 'booking_services.booking_id')
-            ->where('booking_services.staff_id', $staff->id)->where('bookings.branch_id', $branch->id)
-            ->whereIn('bookings.status', Booking::ACTIVE)->whereNull('bookings.deleted_at')
-            ->where('bookings.appointment_date', '>=', now($branch->timezone)->toDateString())->exists();
-        if ($hasBookings) {
-            throw ValidationException::withMessages(['schedule' => 'Nhân viên có lịch hẹn chưa hoàn tất. Hãy xử lý lịch hẹn trước khi đổi hồ sơ, ca làm hoặc thêm ngày nghỉ.']);
-        }
     }
 }

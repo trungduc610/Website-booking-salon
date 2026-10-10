@@ -3,15 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\HoursRequest;
-use App\Models\Booking;
 use App\Models\Branch;
+use App\Services\BookingScheduleGuard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\ValidationException;
 
 class ScheduleController extends Controller
 {
+    public function __construct(private BookingScheduleGuard $scheduleGuard)
+    {
+    }
+
     public function edit(Branch $branch)
     {
         Gate::authorize('update', $branch);
@@ -33,7 +36,7 @@ class ScheduleController extends Controller
         ]);
         DB::transaction(function () use ($request, $branch, $policy): void {
             Branch::whereKey($branch->id)->lockForUpdate()->firstOrFail();
-            $this->assertNoFutureBookings($branch);
+            $this->scheduleGuard->branchHours($branch, $request->validated('hours'), (int) $policy['default_buffer_minutes']);
             foreach ($request->validated('hours') as $row) {
                 DB::table('branch_working_hours')->updateOrInsert(
                     ['branch_id' => $branch->id, 'day_of_week' => $row['day_of_week']],
@@ -51,7 +54,7 @@ class ScheduleController extends Controller
         $data = $request->validate(['date' => ['required', 'date_format:Y-m-d'], 'name' => ['required', 'string', 'max:200']]);
         DB::transaction(function () use ($branch, $data): void {
             Branch::whereKey($branch->id)->lockForUpdate()->firstOrFail();
-            $this->assertNoFutureBookings($branch, $data['date']);
+            $this->scheduleGuard->holiday($branch, $data['date']);
             DB::table('branch_holidays')->updateOrInsert(['branch_id' => $branch->id, 'date' => $data['date']], ['name' => $data['name'], 'is_closed' => true]);
         });
         return back()->with('success', 'Đã lưu ngày đóng cửa.');
@@ -67,14 +70,5 @@ class ScheduleController extends Controller
             DB::table('branch_holidays')->where('id', $row->id)->update(['is_closed' => false]);
         });
         return back()->with('success', 'Đã mở lại ngày này theo giờ làm thông thường.');
-    }
-
-    private function assertNoFutureBookings(Branch $branch, ?string $date = null): void
-    {
-        $query = Booking::where('branch_id', $branch->id)->whereIn('status', Booking::ACTIVE);
-        $date ? $query->where('appointment_date', $date) : $query->where('appointment_date', '>=', now($branch->timezone)->toDateString());
-        if ($query->exists()) {
-            throw ValidationException::withMessages(['hours' => 'Có lịch hẹn chưa hoàn tất. Hãy xử lý lịch hẹn trước khi thay đổi giờ mở cửa hoặc đóng ngày này.']);
-        }
     }
 }

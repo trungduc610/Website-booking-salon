@@ -2,6 +2,7 @@
 @section('title', 'Giờ mở cửa')
 @section('content')
 <section class="dashboard-card"><a href="{{ route('staff.index',$branch) }}">← Nhân viên</a><h1>Giờ mở cửa · {{ $branch->name }}</h1><p>Múi giờ: {{ $branch->timezone }}</p><x-errors />
+<x-schedule-conflicts :branch="$branch" />
 <form method="post" action="{{ route('schedule.update',$branch) }}">@csrf @method('PUT')
 <x-weekly-hours :rows="$hours" :branch-hours="true" />
 <div class="row g-3">
