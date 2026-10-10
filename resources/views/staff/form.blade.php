@@ -3,6 +3,7 @@
 @section('content')
 <section class="dashboard-card">
 <a href="{{ route('staff.index', $branch) }}">← Nhân viên</a><h1>{{ $staff->exists ? $staff->full_name : 'Thêm nhân viên' }}</h1><x-errors />
+<x-schedule-conflicts :branch="$branch" />
 <form method="post" action="{{ $staff->exists ? route('staff.update', [$branch, $staff]) : route('staff.store', $branch) }}">@csrf @if($staff->exists) @method('PUT') @endif
 <div class="row g-3">
 @foreach(['full_name' => 'Họ tên', 'position' => 'Chức danh', 'employee_code' => 'Mã nhân viên'] as $field => $label)

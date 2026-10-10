@@ -68,7 +68,7 @@ class BookingController extends Controller
     public function salon(Request $request, Branch $branch)
     {
         Gate::authorize('manageBookings', $branch);
-        $request->validate(['date' => ['nullable', 'date_format:Y-m-d'], 'status' => ['nullable', 'in:PENDING,CONFIRMED,CHECKED_IN,IN_PROGRESS,COMPLETED,CANCELLED,NO_SHOW,REJECTED,EXPIRED']]);
+        $request->validate(['date' => ['nullable', 'date_format:Y-m-d'], 'status' => ['nullable', 'in:PENDING,CONFIRMED,CHECKED_IN,IN_PROGRESS,COMPLETED,CANCELLED,NO_SHOW,REJECTED,EXPIRED'], 'booking_id' => ['nullable', 'integer', 'min:1']]);
         $today = now($branch->timezone)->toDateString();
         $base = Booking::where('branch_id', $branch->id);
         $metrics = [
@@ -93,6 +93,7 @@ class BookingController extends Controller
         $bufferMinutes = (int) \Illuminate\Support\Facades\DB::table('branch_booking_policies')->where('branch_id', $branch->id)->value('default_buffer_minutes');
         return view('bookings.index', ['branch' => $branch, 'metrics' => $metrics, 'schedule' => $schedule, 'scheduleDate' => $scheduleDate, 'scheduleStaff' => $scheduleStaff, 'bufferMinutes' => $bufferMinutes,
             'bookings' => $base->with('items')
+                ->when($request->filled('booking_id'), fn ($q) => $q->whereKey($request->integer('booking_id')))
                 ->when($request->filled('date'), fn ($q) => $q->where('appointment_date', $request->input('date')))
                 ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))
                 ->orderByDesc('appointment_date')->orderBy('appointment_start_time')->paginate(15)->withQueryString()]);

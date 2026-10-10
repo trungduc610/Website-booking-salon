@@ -67,7 +67,7 @@
                     </thead>
                     <tbody>
                         @forelse($bookings as $booking)
-                            <tr>
+                            <tr id="booking-{{ $booking->id }}">
                                 <td><span
                                         class="ticket-code">{{ $booking->booking_code }}</span><br><small>{{ $booking->items->pluck('service_name_snapshot')->join(', ') }}</small>
                                 </td>
