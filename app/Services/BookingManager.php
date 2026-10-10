@@ -17,12 +17,21 @@ class BookingManager
 
     public function create(User $user, Branch $branch, array $data): Booking
     {
-        return DB::transaction(function () use ($user, $branch, $data): Booking {
+        $data = $this->normalizeRequest($data);
+        $payloadHash = hash('sha256', json_encode([
+            'date' => $data['date'], 'time' => $data['time'], 'service_ids' => $data['service_ids'],
+            'staff_id' => $data['staff_id'], 'voucher_code' => $data['voucher_code'], 'note' => $data['note'],
+        ], JSON_THROW_ON_ERROR));
+
+        return DB::transaction(function () use ($user, $branch, $data, $payloadHash): Booking {
             $branch = Branch::whereKey($branch->id)->lockForUpdate()->firstOrFail();
             $profile = $user->customerProfile()->firstOrFail();
             $existing = Booking::where('request_token', $data['request_token'])->first();
             if ($existing) {
-                abort_unless($existing->customer_id === $profile->id && $existing->branch_id === $branch->id, 409);
+                abort_unless($existing->customer_id === $profile->id && $existing->branch_id === $branch->id, 409, 'Mã yêu cầu đã được sử dụng cho khách hàng hoặc chi nhánh khác.');
+                // Older bookings cannot be verified from mutable appointment/item snapshots.
+                abort_if($existing->request_payload_hash === null, 409, 'Không thể xác minh dữ liệu ban đầu của mã yêu cầu này. Vui lòng kiểm tra lịch đã đặt trước khi gửi yêu cầu mới.');
+                abort_unless(hash_equals($existing->request_payload_hash, $payloadHash), 409, 'Mã yêu cầu đã được sử dụng với dữ liệu đặt lịch khác. Vui lòng dùng mã yêu cầu mới.');
                 return $existing;
             }
             $plan = $this->availability->plan($branch, $data);
@@ -36,6 +45,7 @@ class BookingManager
             $booking = Booking::create([
                 'customer_id' => $profile->id, 'branch_id' => $branch->id,
                 'booking_code' => 'GLW-'.strtoupper(Str::random(20)), 'request_token' => $data['request_token'],
+                'request_payload_hash' => $payloadHash,
                 'appointment_date' => $data['date'], 'appointment_start_time' => $plan['start']->format('H:i:s'),
                 'appointment_end_time' => $plan['end']->format('H:i:s'), 'status' => $status,
                 'total_amount' => $amount, 'voucher_id' => $voucherId,
@@ -57,6 +67,19 @@ class BookingManager
             DB::table('booking_status_histories')->insert(['booking_id' => $booking->id, 'status' => $status, 'changed_by' => $user->id]);
             return $booking;
         }, 3);
+    }
+
+    private function normalizeRequest(array $data): array
+    {
+        // Service order determines the item schedule; keep it while normalizing IDs.
+        $data['service_ids'] = array_values(array_map('intval', $data['service_ids']));
+        $data['staff_id'] = isset($data['staff_id']) && $data['staff_id'] !== '' ? (int) $data['staff_id'] : null;
+        $code = strtoupper(trim($data['voucher_code'] ?? ''));
+        $data['voucher_code'] = $code === '' ? null : $code;
+        $note = trim(str_replace(["\r\n", "\r"], "\n", $data['note'] ?? ''));
+        $data['note'] = $note === '' ? null : $note;
+
+        return $data;
     }
 
     public function transition(User $user, Booking $booking, string $status, bool $customer = false): void
