@@ -26,5 +26,9 @@ class DatabaseSeeder extends Seeder
         foreach ($roles as [$code, $name, $level]) {
             Role::updateOrCreate(['code' => $code], ['name' => $name, 'level' => $level]);
         }
+
+        if (app()->environment('local') && ! \App\Models\Business::withTrashed()->exists()) {
+            $this->call(DemoSalonSeeder::class);
+        }
     }
 }

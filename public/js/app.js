@@ -1,22 +1,62 @@
-document.addEventListener('alpine:init', () => {
-  Alpine.data('navigation', () => ({ open: false, toggle() { this.open = !this.open; }, close() { this.open = false; } }));
-  Alpine.data('operations', () => ({ expanded: window.innerWidth > 800, toggle() { this.expanded = !this.expanded; } }));
+document.addEventListener("alpine:init", () => {
+  Alpine.data("navigation", () => ({
+    open: false,
+    toggle() {
+      this.open = !this.open;
+      if (this.open)
+        this.$nextTick(() => document.querySelector("#mobile-nav a")?.focus());
+    },
+    close() {
+      if (!this.open) return;
+      this.open = false;
+      if (
+        document.querySelector("#mobile-nav")?.contains(document.activeElement)
+      ) {
+        document.querySelector(".mobile-menu-button")?.focus();
+      }
+    },
+  }));
+  Alpine.data("operations", () => ({
+    expanded: window.innerWidth > 800,
+    toggle() {
+      this.expanded = !this.expanded;
+    },
+  }));
 });
-document.querySelectorAll('[data-timeline-left]').forEach(element => {
+document.querySelectorAll("[data-timeline-left]").forEach((element) => {
   const left = Number(element.dataset.timelineLeft);
   const width = Number(element.dataset.timelineWidth);
   if (Number.isFinite(left) && Number.isFinite(width)) {
-    element.style.left = Math.max(0, Math.min(100, left)) + '%';
-    element.style.width = Math.max(0, Math.min(100 - left, width)) + '%';
+    element.style.left = Math.max(0, Math.min(100, left)) + "%";
+    element.style.width = Math.max(0, Math.min(100 - left, width)) + "%";
   }
 });
-"use strict";
+("use strict");
 const money = (value) =>
   new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
     maximumFractionDigits: 2,
   }).format(value);
+const appointmentDate = (value) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";
+  const [year, month, day] = value.split("-");
+  return `${day}/${month}/${year}`;
+};
+
+document.querySelectorAll("[data-password-toggle]").forEach((button) => {
+  const input = document.getElementById(button.getAttribute("aria-controls"));
+  if (!input) return;
+  const label = button.getAttribute("aria-label").slice(5);
+  button.hidden = false;
+  button.addEventListener("click", () => {
+    const visible = input.type === "password";
+    input.type = visible ? "text" : "password";
+    button.textContent = visible ? "Ẩn" : "Hiện";
+    button.setAttribute("aria-pressed", String(visible));
+    button.setAttribute("aria-label", `${visible ? "Ẩn" : "Hiện"} ${label}`);
+  });
+});
 document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
   const sync = () =>
     button.setAttribute(
@@ -52,7 +92,13 @@ document.querySelectorAll("[data-booking-wizard]").forEach((form) => {
     form.querySelectorAll("[data-step-marker]").forEach((marker, i) => {
       if (i === step) marker.setAttribute("aria-current", "step");
       else marker.removeAttribute("aria-current");
+      marker.dataset.completed = String(i < step);
     });
+    const progress = form.querySelector("[data-step-status]");
+    if (progress) {
+      progress.hidden = false;
+      progress.textContent = `Bước ${step + 1} / ${panels.length}`;
+    }
     back.hidden = step === 0;
     next.hidden = step === panels.length - 1;
     error.textContent = "";
@@ -85,8 +131,10 @@ document.querySelectorAll("[data-booking-wizard]").forEach((form) => {
       (sum, input) => sum + Number(input.dataset.duration),
       0,
     );
-    form.querySelector("[data-review-time]").textContent =
-      `Ngày ${form.elements.date.value} · ${form.elements.time.value}`;
+    form.querySelector("[data-review-time]").textContent = form.elements.date
+      .value
+      ? `Ngày ${appointmentDate(form.elements.date.value)} · ${form.elements.time.value}`
+      : "Chưa chọn ngày và giờ hẹn.";
     form.querySelector("[data-review-staff]").textContent =
       form.elements.staff_id.selectedOptions[0].textContent;
     form.querySelector("[data-review-voucher]").textContent = form.elements
@@ -178,7 +226,15 @@ document.querySelectorAll("[data-booking-wizard]").forEach((form) => {
   });
   form.classList.add("wizard-ready");
   form.querySelector("[data-wizard-actions]").hidden = false;
-  show(0, false);
+  const initialStep = Number(form.dataset.initialStep || 0);
+  show(
+    Number.isInteger(initialStep) &&
+      initialStep >= 0 &&
+      initialStep < panels.length
+      ? initialStep
+      : 0,
+    false,
+  );
   summary();
 });
 document.querySelectorAll("[data-submit-form]").forEach((form) => {

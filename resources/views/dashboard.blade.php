@@ -2,7 +2,7 @@
 @section('title', 'Tài khoản của bạn')
 @section('content')
     <section class="welcome-panel">
-        <div><span class="eyebrow">YOUR PERSONAL SPACE</span>
+        <div><span class="eyebrow">Không gian của bạn</span>
             <h1>Xin chào,<br><em>{{ auth()->user()->full_name }}.</em></h1>
             <p>Một khoảng thời gian dành riêng cho bạn đang chờ.</p><a class="btn btn-primary"
                 href="{{ route('salons.index') }}">Khám phá & đặt lịch ↗</a>
@@ -23,18 +23,18 @@
         </section>
     @endif
     <div class="portal-grid">
-        <a class="portal-card" href="{{ route('bookings.index') }}"><span class="portal-icon"
-                aria-hidden="true">▦</span><span class="eyebrow">01 / APPOINTMENTS</span>
+        <a class="portal-card" href="{{ route('bookings.index') }}"><span class="portal-icon" aria-hidden="true"><x-icon
+                    name="calendar" /></span><span class="eyebrow">Cuộc hẹn</span>
             <h2>Lịch hẹn của tôi</h2>
             <p>Xem thông tin, trạng thái và quản lý các cuộc hẹn.</p><span class="card-link">Xem lịch hẹn <span
                     aria-hidden="true">↗</span></span>
-        </a><a class="portal-card" href="{{ route('salons.index') }}"><span class="portal-icon"
-                aria-hidden="true">✧</span><span class="eyebrow">02 / DISCOVER</span>
+        </a><a class="portal-card" href="{{ route('salons.index') }}"><span class="portal-icon" aria-hidden="true"><x-icon
+                    name="sparkle" /></span><span class="eyebrow">Khám phá</span>
             <h2>Chăm sóc bản thân</h2>
             <p>Chọn một không gian và dịch vụ dành cho bạn.</p><span class="card-link">Khám phá salon <span
                     aria-hidden="true">↗</span></span>
         </a><a class="portal-card" href="{{ route('salon.branches') }}"><span class="portal-icon"
-                aria-hidden="true">◫</span><span class="eyebrow">03 / WORKSPACE</span>
+                aria-hidden="true"><x-icon name="branch" /></span><span class="eyebrow">Quản lý salon</span>
             <h2>Không gian salon</h2>
             <p>Truy cập chi nhánh và công việc được phân quyền.</p><span class="card-link">Quản lý chi nhánh <span
                     aria-hidden="true">↗</span></span>

@@ -47,6 +47,20 @@ php artisan serve --host=127.0.0.1
 
 Mở http://127.0.0.1:8000/register. APP_DEBUG=false; lỗi chi tiết nằm trong storage/logs. SESSION_SECURE_COOKIE=false cho HTTP local; bật true khi dùng HTTPS.
 
+### Salon, chi nhánh và dịch vụ mẫu trên máy local
+
+Với `APP_ENV=local` và database chưa có doanh nghiệp, `php artisan migrate --seed` tạo thêm 1 salon mẫu, 3 chi nhánh, 12 dịch vụ và 6 nhân viên. Các chi nhánh đã xuất bản, mở cửa 08:00–20:00 cả tuần và có lịch làm, kỹ năng, chính sách đặt lịch đầy đủ. Mở `/salons`, đăng ký/đăng nhập bằng tài khoản của bạn để chọn dịch vụ, chuyên viên và thử đặt lịch. Tên chi nhánh có nhãn `(mẫu)`; địa chỉ chỉ là minh họa.
+
+Nếu đã chạy bản cũ và trang hiển thị 0 salon, chạy một lần rồi tải lại trang:
+
+```powershell
+php artisan db:seed --class=DemoSalonSeeder
+```
+
+Seeder chỉ chạy trong `local`/`testing`, tạo dữ liệu trong transaction và bỏ qua nếu salon mẫu đã tồn tại, kể cả khi đã xóa mềm. Chạy lại không nhân bản hoặc ghi đè các chỉnh sửa. Seeder mặc định không tự thêm dữ liệu mẫu vào database đã có doanh nghiệp. Tài khoản kỹ thuật sở hữu salon mẫu bị vô hiệu hóa, có mật khẩu ngẫu nhiên và không được cấp vai trò đăng nhập quản lý; tài khoản khách hiện có vẫn dùng được. Để thử quản lý salon của riêng bạn, làm theo mục bên dưới.
+
+Trên môi trường triển khai, đặt `APP_ENV=production` và tạo/cấu hình/xuất bản salon thật. Chỉ các doanh nghiệp và chi nhánh đang `ACTIVE` được hiển thị; dịch vụ phải `ACTIVE` và cho phép đặt lịch. Không cần chạy `migrate:fresh` để bổ sung dữ liệu mẫu.
+
 Nếu Composer lỗi chứng chỉ, cấu hình CA bundle hợp lệ, ví dụ D:\laragon\etc\ssl\cacert.pem cho curl.cainfo/openssl.cafile. Không tắt xác minh TLS.
 
 ## Chạy thử từ đầu đến cuối
@@ -168,4 +182,4 @@ Mở http://127.0.0.1:8000. Nếu gặp HTTP 500, kiểm tra storage/logs/larave
 
 Git bỏ qua .env và biến thể, cấu hình máy, vendor PHP, cache, sessions, log, uploads, bản dump database ở thư mục gốc và báo cáo chạy thử local. Chỉ commit .env.example với giá trị mẫu; mỗi máy tự tạo APP_KEY. Không dùng `git add -f` cho các file bị bỏ qua. .gitignore không bảo vệ file upload thủ công hoặc file đã nằm trong lịch sử Git.
 
-Repository không đi kèm database, tài khoản người dùng thật hoặc mật khẩu mặc định. Dữ liệu tài khoản trong tests là fixture dùng trên database kiểm thử. Các kết quả trong VERIFICATION.md có ghi rõ môi trường và giới hạn của từng lượt chạy.
+Repository không đi kèm database, tài khoản người dùng thật hoặc mật khẩu mặc định. Seeder có dữ liệu salon minh họa cho local như hướng dẫn trên; dữ liệu tài khoản trong tests là fixture dùng trên database kiểm thử. Các kết quả trong VERIFICATION.md có ghi rõ môi trường và giới hạn của từng lượt chạy.
