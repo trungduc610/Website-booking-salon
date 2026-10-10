@@ -61,7 +61,7 @@ class StaffScheduleTest extends TestCase
     {
         $f = $this->bookingFixture();
         $this->actingAs($f['user']);
-        $this->put(route('schedule.update', $f['branch']), [...$this->hoursPayload(),'lead_time_minutes' => 0,'booking_horizon_days' => 90,'default_buffer_minutes' => 15,'cancellation_hours' => 24])->assertSessionHasNoErrors();
+        $this->put(route('schedule.update', $f['branch']), [...$this->hoursPayload(),'lead_time_minutes' => 0,'booking_horizon_days' => 90,'default_buffer_minutes' => 15,'cancellation_hours' => 24,'reschedule_hours' => 12])->assertSessionHasNoErrors();
         $this->post(route('schedule.holiday', $f['branch']), ['date' => now()->addWeek()->toDateString(),'name' => 'Holiday'])->assertSessionHasNoErrors();
         $id = \Illuminate\Support\Facades\DB::table('branch_holidays')->value('id');
         $this->patch(route('schedule.reopen', [$f['branch'],$id]))->assertSessionHasNoErrors();

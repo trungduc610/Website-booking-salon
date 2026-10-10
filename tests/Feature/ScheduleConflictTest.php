@@ -35,7 +35,7 @@ class ScheduleConflictTest extends TestCase
     {
         return [...$this->hoursPayload($f, $hours), ...array_replace([
             'lead_time_minutes' => 0, 'booking_horizon_days' => 90,
-            'default_buffer_minutes' => 0, 'cancellation_hours' => 0,
+            'default_buffer_minutes' => 0, 'cancellation_hours' => 0, 'reschedule_hours' => 12,
         ], $policy)];
     }
 

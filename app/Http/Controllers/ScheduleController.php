@@ -33,6 +33,7 @@ class ScheduleController extends Controller
             'booking_horizon_days' => ['required', 'integer', 'between:1,365'],
             'default_buffer_minutes' => ['required', 'integer', 'between:0,120'],
             'cancellation_hours' => ['required', 'integer', 'between:0,168'],
+            'reschedule_hours' => ['required', 'integer', 'between:0,168'],
         ]);
         DB::transaction(function () use ($request, $branch, $policy): void {
             Branch::whereKey($branch->id)->lockForUpdate()->firstOrFail();
