@@ -2,7 +2,7 @@
 @section('title', 'Lịch hẹn')
 @section('content')
     <div class="section-heading">
-        <div><span class="eyebrow">{{ $branch ? 'SALON OPERATIONS' : 'YOUR UPCOMING MOMENTS' }}</span>
+        <div><span class="eyebrow">{{ $branch ? 'Không gian salon' : 'Lịch hẹn của bạn' }}</span>
             <h1>{{ $branch ? 'Lịch hẹn · ' . $branch->name : 'Thời gian dành cho bạn.' }}</h1>
         </div>
         @unless ($branch)
@@ -14,26 +14,36 @@
         <div class="metric-grid">
             <dl class="metric-card">
                 <dt>Lịch hẹn hôm nay</dt>
-                <dd>{{ $metrics['today'] }}</dd><dd class="metric-caption"><small>{{ $metrics['date'] }} · {{ $branch->timezone }}</small><x-sparkline
-                    :values="$metrics['trend']" label="Số lịch hẹn trong 7 ngày gần nhất, từ cũ đến mới" /></dd></dl>
+                <dd>{{ $metrics['today'] }}</dd>
+                <dd class="metric-caption"><small>{{ $metrics['date'] }} · {{ $branch->timezone }}</small><x-sparkline
+                        :values="$metrics['trend']" label="Số lịch hẹn trong 7 ngày gần nhất, từ cũ đến mới" /></dd>
+            </dl>
             <dl class="metric-card">
                 <dt>Đang chờ xác nhận</dt>
-                <dd>{{ $metrics['pending'] }}</dd><dd class="metric-caption"><small>Lịch còn thời hạn giữ chỗ</small></dd></dl>
+                <dd>{{ $metrics['pending'] }}</dd>
+                <dd class="metric-caption"><small>Lịch còn thời hạn giữ chỗ</small></dd>
+            </dl>
             <dl class="metric-card">
                 <dt>Hoàn tất hôm nay</dt>
-                <dd>{{ $metrics['completed'] }}</dd><dd class="metric-caption"><small>Cuộc hẹn đã hoàn thành</small></dd></dl>
+                <dd>{{ $metrics['completed'] }}</dd>
+                <dd class="metric-caption"><small>Cuộc hẹn đã hoàn thành</small></dd>
+            </dl>
             <dl class="metric-card">
                 <dt>Đã thu hôm nay</dt>
-                <dd>{{ number_format((float) $metrics['received'], 0, ',', '.') }} ₫</dd><dd class="metric-caption"><small>Tiền đã ghi nhận, trước hoàn
-                    tiền</small></dd></dl>
+                <dd>{{ number_format((float) $metrics['received'], 0, ',', '.') }} ₫</dd>
+                <dd class="metric-caption"><small>Tiền đã ghi nhận, trước hoàn
+                        tiền</small></dd>
+            </dl>
             <dl class="metric-card">
                 <dt>Tỷ lệ không đến hôm nay</dt>
-                <dd>{{ $metrics['noShowRate'] === null ? '—' : $metrics['noShowRate'] . '%' }}</dd><dd class="metric-caption"><small>Trong các lịch hoàn
-                    tất / không đến</small></dd></dl>
+                <dd>{{ $metrics['noShowRate'] === null ? '—' : $metrics['noShowRate'] . '%' }}</dd>
+                <dd class="metric-caption"><small>Trong các lịch hoàn
+                        tất / không đến</small></dd>
+            </dl>
         </div>
         @include('components.schedule-timeline')<section class="dashboard-card">
             <div class="section-heading">
-                <div><span class="eyebrow">APPOINTMENT DESK</span>
+                <div><span class="eyebrow">Danh sách lịch hẹn</span>
                     <h2>Quản lý cuộc hẹn</h2>
                 </div>
             </div>
@@ -78,8 +88,7 @@
                                 </td>
                                 <td>{{ number_format((float) $booking->final_amount, 2, ',', '.') }} ₫</td>
                                 <td>
-                                    <a href="{{ route('salon.payments.show', [$branch, $booking]) }}">Thanh toán và hoàn tiền
-                                        ↗</a>
+                                    <a href="{{ route('salon.payments.show', [$branch, $booking]) }}">Thanh toán và hoàn tiền ↗</a>
                                     @if (in_array($booking->status, ['PENDING', 'CONFIRMED'], true) && $booking->items->isNotEmpty())
                                         <button type="button" class="btn btn-sm mb-2" data-reschedule-open
                                             data-reschedule-url="{{ route('salon.bookings.reschedule', [$branch, $booking]) }}"
@@ -118,7 +127,7 @@
             </div>{{ $bookings->links() }}
         </section>
         <dialog class="reschedule-dialog" data-reschedule-dialog aria-labelledby="reschedule-title">
-            <form method="post" data-reschedule-form>@csrf @method('PATCH')<span class="eyebrow">A NEW MOMENT</span>
+            <form method="post" data-reschedule-form>@csrf @method('PATCH')<span class="eyebrow">Đổi thời gian hẹn</span>
                 <h2 id="reschedule-title">Đổi lịch hẹn</h2>
                 <p data-reschedule-code class="ticket-code"></p><input type="hidden" name="original_start"><input
                     type="hidden" name="original_staff_id"><label for="move-date" class="form-label">Ngày hẹn

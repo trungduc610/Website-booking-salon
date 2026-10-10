@@ -62,6 +62,17 @@ class DesignExperienceTest extends TestCase
         $f['service']->update(['name' => 'Cắt & tạo kiểu', 'description' => 'Một diện mạo mới, nhẹ nhàng và tự nhiên.', 'price' => '350000.00']);
         $f['category']->update(['name' => 'Chăm sóc tóc']);
         $booking = app(BookingManager::class)->create($f['user'], $f['branch'], $this->bookingData($f));
+        foreach (['login' => route('login'), 'register' => route('register')] as $name => $url) {
+            $response = $this->get($url)->assertOk();
+            if (getenv('GLOWBOOK_EXPORT_UI') === '1') {
+                $directory = storage_path('app/ui-preview');
+                if (!is_dir($directory)) {
+                    mkdir($directory, 0755, true);
+                }
+                file_put_contents($directory.'/'.$name.'.html', $response->getContent());
+                file_put_contents($directory.'/'.$name.'.headers.json', json_encode(['Content-Security-Policy' => $response->headers->get('Content-Security-Policy')]));
+            }
+        }
         $this->actingAs($f['user']);
         $pages = [
             'explore' => route('salons.index'),

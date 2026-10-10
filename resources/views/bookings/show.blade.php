@@ -4,7 +4,7 @@
     <a class="btn mb-4" href="{{ route('bookings.index') }}">
         ← Lịch hẹn của bạn</a><x-errors />
     <div class="booking-layout">
-        <section class="dashboard-card"><span class="eyebrow">A MOMENT RESERVED FOR YOU</span><span
+        <section class="dashboard-card"><span class="eyebrow">Thông tin cuộc hẹn</span><span
                 class="status-badge status-{{ $booking->status }}">{{ __('booking.statuses.' . $booking->status) }}</span>
             <h1>{{ $booking->branch->name }}</h1>
             <p class="ticket-code">{{ $booking->booking_code }}</p>
@@ -66,7 +66,7 @@
                 </details>
             @endif
         </section>
-        <aside class="booking-summary"><span class="eyebrow">YOUR BEAUTY RITUAL</span>
+        <aside class="booking-summary"><span class="eyebrow">Dịch vụ đã chọn</span>
             <h2>Chi tiết dịch vụ</h2>
             <ul>
                 @foreach ($booking->items as $item)
@@ -87,8 +87,7 @@
                     <dt>Tổng tiền</dt>
                     <dd>{{ number_format((float) $booking->final_amount, 2, ',', '.') }} ₫</dd>
                 </div>
-            </dl><a class="btn btn-primary w-full mt-4" href="{{ route('payments.show', $booking) }}">Thanh toán và hoàn tiền
-                ↗</a>
+            </dl><a class="btn btn-primary w-full mt-4" href="{{ route('payments.show', $booking) }}">Thanh toán và hoàn tiền ↗</a>
         </aside>
     </div>
 @endsection

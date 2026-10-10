@@ -2,25 +2,27 @@
 @section('title', 'Đặt lịch')
 @section('content')
     <div class="booking-heading">
-        <a class="back-link" href="{{ route('salons.index') }}">← Khám phá salon</a><span class="eyebrow">YOUR MOMENT OF
-            CARE</span>
-        <h1>Một cuộc hẹn dành cho bạn.</h1>
+        <a class="back-link" href="{{ route('salons.index') }}">← Khám phá salon</a><span class="eyebrow">Đặt lịch cùng
+            Glowbook</span>
+        <h1>Cuộc hẹn của bạn.</h1>
         <p>{{ $branch->name }} · {{ $branch->address_line }}</p>
     </div>
     <x-errors />
     <form method="post" action="{{ route('bookings.store', $branch) }}" class="booking-layout"
         data-slots-url="{{ route('bookings.slots', $branch) }}" data-booking-wizard data-submit-form
+        data-initial-step="{{ $errors->hasAny(['date', 'time', 'staff_id']) ? 1 : ($errors->hasAny(['voucher_code', 'note']) ? 2 : 0) }}"
         data-availability-url="{{ route('bookings.availability', $branch) }}">@csrf
         <input type="hidden" name="request_token"
             value="{{ old('request_token', (string) Illuminate\Support\Str::uuid()) }}">
         <div class="booking-main">
             <ol class="booking-stepper" aria-label="Tiến trình đặt lịch">
-                @foreach (['Dịch vụ', 'Chuyên viên & giờ', 'Thông tin', 'Xác nhận'] as $label)
+                @foreach (['Dịch vụ', 'Ngày & giờ', 'Thông tin', 'Xác nhận'] as $label)
                     <li data-step-marker="{{ $loop->index }}"><span>{{ $loop->iteration }}</span>{{ $label }}</li>
                 @endforeach
             </ol>
-            <section class="wizard-panel" data-step="0" aria-labelledby="services-title"><span class="eyebrow">01 / THE
-                    TREATMENT</span>
+            <p class="wizard-progress" data-step-status role="status" hidden></p>
+            <section class="wizard-panel" data-step="0" aria-labelledby="services-title"><span class="eyebrow">Bước 1 ·
+                    Chọn dịch vụ</span>
                 <h2 id="services-title" tabindex="-1">Bạn muốn chăm sóc điều gì?</h2>
                 <p class="muted">Chọn một hoặc nhiều dịch vụ để tạo cuộc hẹn của riêng bạn.</p>
                 <label class="visually-hidden" for="service-search">Tìm dịch vụ</label><input class="form-control mb-4"
@@ -53,9 +55,9 @@
                 </fieldset>
                 <p hidden data-service-empty class="muted">Không tìm thấy dịch vụ phù hợp.</p>
             </section>
-            <section class="wizard-panel" data-step="1" aria-labelledby="time-title"><span class="eyebrow">02 / YOUR
-                    PERFECT TIME</span>
-                <h2 id="time-title" tabindex="-1">Chọn người chăm sóc & thời gian.</h2>
+            <section class="wizard-panel" data-step="1" aria-labelledby="time-title"><span class="eyebrow">Bước 2 · Chọn
+                    chuyên viên và thời gian</span>
+                <h2 id="time-title" tabindex="-1">Khi nào bạn muốn đến?</h2>
                 <p class="muted">Giờ địa phương: {{ $branch->timezone }}. Kiểm tra để biết khung giờ còn trống.</p>
                 <label for="staff_id" class="form-label">Chuyên viên</label><select name="staff_id" id="staff_id"
                     class="form-control">
@@ -87,19 +89,21 @@
                     @for ($i = 0; $i < 7; $i++)
                         @php($day = now($branch->timezone)->addDays($i))
                         <button class="date-choice" type="button" data-date-choice="{{ $day->toDateString() }}"
-                            aria-pressed="false"><small>{{ $i === 0 ? 'Hôm nay' : $day->format('D') }}</small><strong>{{ $day->format('d/m') }}</strong></button>
+                            aria-label="{{ $day->locale('vi')->isoFormat('dddd, D [tháng] M') }}"
+                            aria-pressed="false"><small>{{ $i === 0 ? 'Hôm nay' : ($i === 1 ? 'Ngày mai' : ($day->dayOfWeek === 0 ? 'Chủ nhật' : 'Thứ ' . ($day->dayOfWeek + 1))) }}</small><strong>{{ $day->format('d/m') }}</strong></button>
                     @endfor
                 </div>
                 <button class="btn mt-3" type="button" data-load-slots>Xem giờ còn trống</button>
-                <p class="field-hint" role="status" data-slots-status>Chọn ngày và dịch vụ để xem các khung giờ gợi ý.</p>
+                <p class="field-hint" role="status" data-slots-status>Chọn ngày và dịch vụ để xem các khung giờ gợi ý.
+                </p>
                 <div class="slot-grid" data-slot-grid role="group" aria-label="Giờ hẹn gợi ý"></div><button
                     class="btn mt-3" type="button" data-check-availability>Kiểm tra khung giờ ↗</button>
                 <div class="availability-result" role="status" data-availability-status>Khung giờ chỉ được giữ sau khi
                     gửi đặt lịch thành công.</div>
             </section>
-            <section class="wizard-panel" data-step="2" aria-labelledby="details-title"><span class="eyebrow">03 / THE
-                    LITTLE DETAILS</span>
-                <h2 id="details-title" tabindex="-1">Thêm một chút riêng tư.</h2>
+            <section class="wizard-panel" data-step="2" aria-labelledby="details-title"><span class="eyebrow">Bước 3 ·
+                    Thông tin của bạn</span>
+                <h2 id="details-title" tabindex="-1">Lời nhắn và ưu đãi.</h2>
                 <div class="customer-detail">
                     <strong>{{ auth()->user()->full_name }}</strong><span>{{ auth()->user()->email }}</span><span>{{ auth()->user()->phone }}</span>
                 </div><label for="voucher_code" class="form-label">Mã ưu đãi <span class="optional">(không bắt
@@ -111,8 +115,8 @@
                 <textarea name="note" id="note" class="form-control" rows="4" maxlength="1000"
                     placeholder="Sở thích hoặc điều bạn muốn chuyên viên lưu ý…">{{ old('note') }}</textarea>
             </section>
-            <section class="wizard-panel" data-step="3" aria-labelledby="review-title"><span class="eyebrow">04 / READY
-                    FOR YOUR MOMENT</span>
+            <section class="wizard-panel" data-step="3" aria-labelledby="review-title"><span class="eyebrow">Bước 4 ·
+                    Kiểm tra và xác nhận</span>
                 <h2 id="review-title" tabindex="-1">Kiểm tra cuộc hẹn.</h2>
                 <div class="review-details">
                     <p><strong>{{ $branch->name }}</strong><br>{{ $branch->address_line }}</p>
@@ -121,12 +125,13 @@
                     <p data-review-voucher></p>
                 </div>
                 <div class="notice"><strong>Thông tin thanh toán</strong>
-                    <p class="mb-0">Sau khi salon xác nhận, bạn có thể thanh toán bằng MoMo tại chi nhánh đã kích hoạt, hoặc thanh toán trực tiếp. Phương thức khả dụng hiển thị trong chi tiết lịch hẹn.</p>
+                    <p class="mb-0">Sau khi salon xác nhận, bạn có thể thanh toán bằng MoMo tại chi nhánh đã kích hoạt,
+                        hoặc thanh toán trực tiếp. Phương thức khả dụng hiển thị trong chi tiết lịch hẹn.</p>
                 </div>
                 <p class="muted">Salon sẽ kiểm tra lại thời gian và ưu đãi khi bạn gửi yêu cầu.</p><button
                     class="btn btn-primary submit-button" type="submit" data-submit-button
-                    @disabled($services->isEmpty())><span data-button-label>Xác nhận đặt lịch ↗</span><span
-                        class="button-spinner" aria-hidden="true" hidden></span></button>
+                    @disabled($services->isEmpty())><span data-button-label>Xác nhận đặt lịch</span><x-icon
+                        name="check" /><span class="button-spinner" aria-hidden="true" hidden></span></button>
                 <p class="form-status" role="status" data-submit-status></p>
             </section>
             <div class="wizard-actions" hidden data-wizard-actions><button type="button" class="mobile-summary-trigger"
@@ -134,10 +139,10 @@
                         aria-hidden="true">⌃</span></button><button type="button" class="btn" data-step-back>← Quay
                     lại</button>
                 <p data-wizard-error role="alert"></p><button type="button" class="btn btn-primary"
-                    data-step-next>Tiếp tục →</button>
+                    data-step-next>Tiếp tục <x-icon name="arrow" /></button>
             </div>
         </div>
-        <aside class="booking-summary" aria-label="Tóm tắt cuộc hẹn"><span class="eyebrow">YOUR BEAUTY RITUAL</span>
+        <aside class="booking-summary" aria-label="Tóm tắt cuộc hẹn"><span class="eyebrow">Tóm tắt cuộc hẹn</span>
             <h2>Cuộc hẹn của bạn</h2>
             <p>{{ $branch->name }}</p>
             <div class="summary-divider"></div>
